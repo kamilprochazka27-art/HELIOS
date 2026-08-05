@@ -1,379 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>HELIOS 3D Control Center</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.114/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.114/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; }
+        #hud { position: absolute; top: 10px; left: 10px; color: #00ffcc; font-family: monospace; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #00ffcc; z-index: 999; }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    <div id="hud">
+        <h3>HELIOS Digital Twin</h3>
+        <p id="status">Connecting to Colab Streamer...</p>
+        <p>Satellites: <span id="satCount">0</span></p>
+    </div>
 
-# Colab-ready HELIOS Digital Twin Simulator + Bidirectional Streamer & Helly AI
+    <script>
+        // Zadej svůj Cesium ion token (pokud ho máš, jinak lze nechat výchozí demo)
+        Cesium.Ion.defaultAccessToken = 'TVŮJ_CESIUM_TOKEN_ZDE';
 
-import time
-import csv
-import hashlib
-import json
-import threading
-from queue import Queue
-from typing import List, Tuple, Dict, Any
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            terrainProvider: Cesium.createWorldTerrain()
+        });
 
-import numpy as np
+        const pinBuilder = new Cesium.PinBuilder();
+        const collection = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
 
-# ---- CONFIG (change here) ----
-N = 30000              # number of satellites
-STEPS = 100            # simulation steps
-DT = 1.0               # seconds per step
-CELL_SIZE = 1.0        # km
-SAFETY_RADIUS = 0.5    # km
-LOOKAHEAD = 60.0       # seconds for TCA
-SAMPLE_INTERVAL = 5
-EVENTS_CSV = "events.csv"
-HEATMAP_CSV = "heatmap_samples.csv"
-SEED = 42
+        // WebSocket připojení na tvůj běžící Colab přes localtunnel
+        const ws = new WebSocket('wss://tiny-times-visit.loca.lt');
 
-# --- OPTIONAL VISUALIZATION & CONTROL CONFIG ---
-ENABLE_VISUALIZATION = True
-STREAM_PORT = 8766
-# ------------------------------
+        ws.onopen = () => {
+            document.getElementById('status').innerText = 'Connected (Live Stream)';
+        };
 
-def deterministic_priority(sid: str) -> int:
-    h = hashlib.md5(sid.encode("utf-8")).hexdigest()
-    return int(h, 16) % 1000000
-
-def time_of_closest_approach(r: np.ndarray, v: np.ndarray) -> float:
-    vr2 = float((v * v).sum())
-    if vr2 < 1e-12:
-        return 0.0
-    t = -float((r * v).sum()) / vr2
-    return max(0.0, t)
-
-def distance_at_time(r: np.ndarray, v: np.ndarray, t: float) -> float:
-    rr = r + v * t
-    return float(np.linalg.norm(rr))
-
-
-class OperatorProfile:
-    """Manages operator preferences for communication tone and voice output."""
-    def __init__(self, operator_id: str, tone: str = "professional", voice_id: str = "default_voice_01"):
-        self.operator_id = operator_id
-        self.tone = tone          # Options: "professional", "casual", "sarcastic"
-        self.voice_id = voice_id  # TTS Voice profile identifier
-
-class HellyAIAssistant:
-    """AI Voice Companion 'Helly', adapting tone dynamically to the logged-in operator."""
-    def __init__(self, profile: OperatorProfile):
-        self.profile = profile
-
-    def generate_response(self, intent: str, context_data: dict = None) -> str:
-        if self.profile.tone == "professional":
-            return f"[HELLY]: Acknowledged. {intent}. All operational parameters are within nominal bounds."
-        elif self.profile.tone == "sarcastic":
-            return f"[HELLY]: Oh wonderful, another manual override. Let me guess, you know better than the physics engine? ({intent})"
-        else:
-            return f"[HELLY]: Request processed: {intent}."
-
-
-class TelemetryStreamer:
-    """Bidirectional WebSocket Server for real-time streaming outbound telemetry & receiving inbound touch/UI commands."""
-    def __init__(self, port: int = 8766):
-        self.port = port
-        self.outbound_queue = Queue(maxsize=10)
-        self.is_running = False
-        self.thread = None
-        # Simulated global state controlled via UI / Touch commands
-        self.control_state = {
-            "paused": False,
-            "target_step_offset": 0,
-            "prediction_mode": True,
-            "focused_satellite": None
-        }
-
-    def start(self):
-        try:
-            import websockets
-            import asyncio
-        except ImportError:
-            print("[Streamer] The 'websockets' package is not installed. Visualization will be skipped.")
-            return
-
-        self.is_running = True
-        
-        async def handler(websocket):
-            # Handle inbound commands (from touch panels, tablets, or voice UI)
-            async def receive_listener():
-                try:
-                    async for message in websocket:
-                        data = json.loads(message)
-                        action = data.get("action")
-                        if action == "pause":
-                            self.control_state["paused"] = data.get("value", False)
-                        elif action == "set_timeline":
-                            self.control_state["target_step_offset"] = data.get("step", 0)
-                        elif action == "focus_satellite":
-                            self.control_state["focused_satellite"] = data.get("sat_id")
-                        print(f"[Streamer] Received command from UI: {action} -> {data}")
-                except websockets.ConnectionClosed:
-                    pass
-
-            # Handle outbound telemetry stream
-            async def send_loop():
-                while self.is_running:
-                    try:
-                        if not self.outbound_queue.empty():
-                            payload = self.outbound_queue.get_nowait()
-                            await websocket.send(json.dumps(payload))
-                        else:
-                            await asyncio.sleep(0.01)
-                    except websockets.ConnectionClosed:
-                        break
-
-            await asyncio.gather(receive_listener(), send_loop())
-
-        async def main():
-            async with websockets.serve(handler, "0.0.0.0", self.port):
-                await asyncio.Future()
-
-        def run_server():
-            asyncio.run(main())
-
-        self.thread = threading.Thread(target=run_server, daemon=True)
-        self.thread.start()
-        print(f"[Streamer] Bidirectional Control & Visualization server running on port {self.port}")
-
-    def push_frame(self, step: int, ids: List[str], positions: np.ndarray, base_timestamp: float):
-        if not self.is_running:
-            return
-        if self.outbound_queue.full():
-            try:
-                self.outbound_queue.get_nowait()
-            except:
-                pass
-        
-        # Enhanced payload including timeline and prediction mode metadata for UI HUD
-        simulated_time_str = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(base_timestamp + (step * 60)))
-        payload = {
-            "step": step,
-            "is_prediction_mode": self.control_state["prediction_mode"],
-            "simulated_timestamp": simulated_time_str,
-            "focused_satellite": self.control_state["focused_satellite"],
-            "satellites": [
-                {"id": ids[i], "x": float(positions[i, 0]), "y": float(positions[i, 1]), "z": float(positions[i, 2])}
-                for i in range(min(5000, len(ids))) # Send subset or all depending on bandwidth optimization
-            ]
-        }
-        try:
-            self.outbound_queue.put_nowait(payload)
-        except:
-            pass
-
-    def stop(self):
-        self.is_running = False
-
-
-class HeliosSimulator:
-    def __init__(
-        self,
-        n: int,
-        steps: int,
-        dt: float = 1.0,
-        cell_size: float = 1.0,
-        safety_radius: float = 0.5,
-        lookahead: float = 60.0,
-        sample_interval: int = 60,
-        rng_seed: int = 42,
-        output_events: str = "events.csv",
-        output_heatmap: str = "heatmap_samples.csv",
-        streamer: TelemetryStreamer = None,
-        operator_profile: OperatorProfile = None,
-    ):
-        self.n = n
-        self.steps = steps
-        self.dt = dt
-        self.cell_size = cell_size
-        self.safety_radius = safety_radius
-        self.lookahead = lookahead
-        self.sample_interval = sample_interval
-        self.output_events = output_events
-        self.output_heatmap = output_heatmap
-        self.streamer = streamer
-        
-        # Initialize Operator & Helly AI Assistant
-        self.operator = operator_profile or OperatorProfile("OP-DEFAULT", tone="professional")
-        self.helly = HellyAIAssistant(self.operator)
-
-        np.random.seed(rng_seed)
-
-        self.positions = np.zeros((n, 3), dtype=np.float64)
-        self.velocities = np.zeros((n, 3), dtype=np.float64)
-        self.ids: List[str] = [f"SAT-{i:06d}" for i in range(n)]
-        self.priorities = np.array([deterministic_priority(s) for s in self.ids], dtype=np.int64)
-
-        base_alt_km = 550.0
-        ring_radius = 6371.0 + base_alt_km
-        thetas = np.linspace(0, 2 * np.pi, n, endpoint=False) + np.random.uniform(-1e-3, 1e-3, size=n)
-        radii = ring_radius + np.random.uniform(-5.0, 5.0, size=n)
-        self.positions[:, 0] = radii * np.cos(thetas)
-        self.positions[:, 1] = radii * np.sin(thetas)
-        self.positions[:, 2] = np.random.uniform(-2.0, 2.0, size=n)
-
-        base_speed = 7.5
-        self.velocities[:, 0] = -base_speed * np.sin(thetas) + np.random.uniform(-0.02, 0.02, size=n)
-        self.velocities[:, 1] = base_speed * np.cos(thetas) + np.random.uniform(-0.02, 0.02, size=n)
-        self.velocities[:, 2] = np.random.uniform(-0.01, 0.01, size=n)
-
-        self.events_file = open(self.output_events, "w", newline="")
-        self.events_writer = csv.writer(self.events_file)
-        self.events_writer.writerow(["step", "sat_id", "partner_id", "tca_s", "dmin_km", "old_x", "old_y", "old_z", "new_x", "new_y", "new_z"])
-        
-        self.heatmap_file = open(self.output_heatmap, "w", newline="")
-        self.heatmap_writer = csv.writer(self.heatmap_file)
-        self.heatmap_writer.writerow(["step", "cell_x", "cell_y", "count"])
-
-        self.total_conflicts = 0
-        self.total_corrections = 0
-
-    def _cell_coords_array(self, positions: np.ndarray) -> np.ndarray:
-        return np.floor(positions / self.cell_size).astype(np.int32)
-
-    def _build_cell_map(self, cell_coords: np.ndarray):
-        from collections import defaultdict
-        cell_map = defaultdict(list)
-        for i, (cx, cy, cz) in enumerate(cell_coords):
-            cell_map[(int(cx), int(cy), int(cz))].append(i)
-        return cell_map
-
-    def _pair_candidates(self, cell_map):
-        pairs = []
-        neighbor_offsets = [(dx, dy, dz) for dx in (-1, 0, 1) for dy in (-1, 0, 1) for dz in (-1, 0, 1)]
-        keys = sorted(cell_map.keys())
-        for key in keys:
-            indices = cell_map[key]
-            if len(indices) > 1:
-                L = len(indices)
-                for a in range(L):
-                    ia = indices[a]
-                    for b in range(a + 1, L):
-                        pairs.append((ia, indices[b]))
-            kx, ky, kz = key
-            for dx, dy, dz in neighbor_offsets:
-                nk = (kx + dx, ky + dy, kz + dz)
-                if nk <= key:
-                    continue
-                if nk in cell_map:
-                    for ia in indices:
-                        for ib in cell_map[nk]:
-                            pairs.append((ia, ib))
-        return pairs
-
-    def _apply_deterministic_correction(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
-        sid = self.ids[idx]
-        h = hashlib.md5(sid.encode("utf-8")).digest()
-        dx = ((h[0] / 255.0) * 20.0) + 5.0
-        dy = ((h[1] / 255.0) * 20.0) + 5.0
-        dz = ((h[2] / 255.0) * 4.0) + 0.5
-        sx = 1 if (h[3] & 1) == 0 else -1
-        sy = 1 if (h[4] & 1) == 0 else -1
-        sz = 1 if (h[5] & 1) == 0 else -1
-        offset = np.array([sx * dx, sy * dy, sz * dz], dtype=np.float64)
-
-        base_speed = 7.5
-        pos = self.positions[idx]
-        if abs(pos[0]) < 1e-6 and abs(pos[1]) < 1e-6:
-            tangential = np.array([0.0, base_speed, 0.0], dtype=np.float64)
-        else:
-            t = np.array([-pos[1], pos[0], 0.0], dtype=np.float64)
-            t_norm = np.linalg.norm(t)
-            tangential = (t / (t_norm + 1e-12)) * base_speed
-        tangential[2] += sz * 0.01
-        return pos + offset, tangential
-
-    def run(self):
-        if self.streamer:
-            self.streamer.start()
-            # Greeting from Helly based on operator profile tone
-            print(self.helly.generate_response("System initialized and ready for command stream."))
-
-        base_real_time = time.time()
-        start_time = time.time()
-
-        step = 1
-        while step <= self.steps:
-            # Respect pause commands coming from UI/touch control
-            if self.streamer and self.streamer.control_state["paused"]:
-                time.sleep(0.1)
-                continue
-
-            step_start = time.time()
-
-            self.positions += self.velocities * self.dt
-
-            cell_coords = self._cell_coords_array(self.positions)
-            cell_map = self._build_cell_map(cell_coords)
-            pairs = self._pair_candidates(cell_map)
-
-            conflicts_to_resolve = []
-            for ia, ib in pairs:
-                r = self.positions[ia] - self.positions[ib]
-                v = self.velocities[ia] - self.velocities[ib]
-                tca = time_of_closest_approach(r, v)
-                if tca > self.lookahead:
-                    continue
-                dmin = distance_at_time(r, v, tca)
-                if dmin < self.safety_radius:
-                    conflicts_to_resolve.append((ia, ib, tca, dmin))
-
-            self.total_conflicts += len(conflicts_to_resolve)
-            corrections = []
-
-            for ia, ib, tca, dmin in conflicts_to_resolve:
-                loser = ia if self.priorities[ia] > self.priorities[ib] else ib
-                winner = ib if loser == ia else ia
-                old_pos = self.positions[loser].copy()
-                new_pos, new_vel = self._apply_deterministic_correction(loser)
-                corrections.append((loser, winner, tca, dmin, old_pos, new_pos, new_vel))
-
-            applied = {}
-            for corr in corrections:
-                idx, partner, tca, dmin, old_pos, new_pos, new_vel = corr
-                if idx in applied:
-                    continue
-                self.positions[idx] = new_pos
-                self.velocities[idx] = new_vel
-                applied[idx] = (partner, tca, dmin, old_pos, new_pos)
-                self.events_writer.writerow([step, self.ids[idx], self.ids[partner], f"{tca:.3f}", f"{dmin:.6f}", f"{old_pos[0]:.6f}", f"{old_pos[1]:.6f}", f"{old_pos[2]:.6f}", f"{new_pos[0]:.6f}", f"{new_pos[1]:.6f}", f"{new_pos[2]:.6f}"])
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            document.getElementById('satCount').innerText = data.satellites.length;
             
-            self.total_corrections += len(applied)
+            collection.removeAll();
+            data.satellites.forEach(sat => {
+                // Převod zjednodušených 3D souřadnic na geodetické pozice na globusu
+                collection.add({
+                    position: Cesium.Cartesian3.fromDegrees(
+                        (sat.x % 360) - 180, 
+                        Math.max(-85, Math.min(85, sat.y / 100)), 
+                        Math.abs(sat.z) * 1000 + 550000
+                    ),
+                    pixelSize: 4,
+                    color: Cesium.Color.CYAN
+                });
+            });
+        };
 
-            # Send data & metadata to streaming queue for external 3D client
-            if self.streamer and self.streamer.is_running:
-                self.streamer.push_frame(step, self.ids, self.positions, base_real_time)
-
-            if step % max(1, self.steps // 10) == 0 or step <= 10:
-                step_elapsed = time.time() - step_start
-                print(f"[step {step}/{self.steps}] conflicts={len(conflicts_to_resolve):5d} corrections={len(applied):5d} step_time={step_elapsed:.3f}s")
-                self.events_file.flush()
-
-            step += 1
-
-        self.events_file.close()
-        self.heatmap_file.close()
-        if self.streamer:
-            self.streamer.stop()
-
-        print("=== Simulation finished ===")
-
-
-# ---- RUNNER WITH PROFILES & BIDIRECTIONAL STREAMER ----
-# Select operator profile tone: "professional", "casual", or "sarcastic"
-active_operator = OperatorProfile(operator_id="KPROCHAZKA", tone="professional", voice_id="voice_space_neutral_01")
-
-streamer_instance = TelemetryStreamer(port=STREAM_PORT) if ENABLE_VISUALIZATION else None
-
-sim = HeliosSimulator(
-    n=N,
-    steps=STEPS,
-    dt=DT,
-    cell_size=CELL_SIZE,
-    safety_radius=SAFETY_RADIUS,
-    lookahead=LOOKAHEAD,
-    sample_interval=SAMPLE_INTERVAL,
-    rng_seed=SEED,
-    output_events=EVENTS_CSV,
-    output_heatmap=HEATMAP_CSV,
-    streamer=streamer_instance,
-    operator_profile=active_operator,
-)
-
-sim.run()
+        ws.onclose = () => {
+            document.getElementById('status').innerText = 'Disconnected from Colab';
+        };
+    </script>
+</body>
+</html>
