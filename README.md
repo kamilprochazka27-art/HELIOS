@@ -1,2 +1,1 @@
-# HELIOS
-HELIOS decentralized protocol
+HELIOS LEO decentralized protocol
