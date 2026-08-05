@@ -20,7 +20,8 @@ Chapter 2: Quantum-Safe Encryption and Identity (SH3X)
    * Use of SHA3-256 and SHA3-512 hashing primitives.
    * Each node has its own SH3XContext class with sovereign public key generation and message signing.
  * Clean Usage Example:
-   # Initialization of quantum-safe context layer for a node
+
+# Initialization of quantum-safe context layer for a node
 crypto_node = SH3XContext(node_id="SAT-HELIOS-ALPHA")
 
 # Signing a command/message
