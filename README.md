@@ -98,8 +98,14 @@ Domain Registration: Agencies register their sovereign boundaries securely using
 Conjunction Evaluation: When two assets from different domains approach each other, the system verifies their registration status.
 
 Deterministic Arbitration: Using SHA3-256 hashing, the protocol objectively determines which asset retains course and which asset is required to execute a deviation maneuver, logging the result immutably in the shared registry.
+
 License
 Distributed under the MIT License. See LICENSE for more information.
+
+COLAB link:
+
+https://colab.research.google.com/drive/17gTTf9Py_ixBQdhK3wcw7okoRFcQ-IJn?usp=sharing
+
 -----
 
 # HELIOS: Security, Defense & Life-Critical Protocol
@@ -155,6 +161,10 @@ Automated Quarantine (trigger_quarantine_and_lockdown): Instantly cuts off commu
 
 License
 Distributed under the MIT License. See LICENSE for more information.
+
+COLAB link:
+
+https://colab.research.google.com/drive/17gTTf9Py_ixBQdhK3wcw7okoRFcQ-IJn?usp=sharing
 -------
 # HELIOS: External Energy & Laser Beaming Propulsion Layer
 
@@ -219,6 +229,11 @@ Architecture Overview
 
 ​License
 ​Distributed under the MIT License. See LICENSE for more information.
+
+COLAB link:
+
+https://colab.research.google.com/drive/17gTTf9Py_ixBQdhK3wcw7okoRFcQ-IJn?usp=sharing
+
 -----
 
 # HELIOS: Quantum-Resistant Multi-Agency Space Federation & Conjunction Arbitration Layer
@@ -276,8 +291,15 @@ Deterministic Arbitration: Computes cryptographic hashes of asset IDs to objecti
 License
 
 Distributed under the MIT License. See LICENSE for more information.
+
+COLAB link:
+
+https://colab.research.google.com/drive/17gTTf9Py_ixBQdhK3wcw7okoRFcQ-IJn?usp=sharing
+
 ------
+
 HELIOS: Unified Air-Space Continuum & Defense Protocol Layer
+
 A high-integrity, quantum-resistant coordination and security framework for the unified air-space continuum. It bridges orbital assets (LEO satellites), atmospheric platforms, IZS (Integrated Rescue System) units, and Personal Air Vehicles (PAVs) under a strict biocentric priority hierarchy and decentralized consensus.
 
 Features
@@ -337,6 +359,11 @@ Architecture Overview
 
 License
 Distributed under the MIT License. See LICENSE for more information.
+
+COLAB link:
+
+https://colab.research.google.com/drive/17gTTf9Py_ixBQdhK3wcw7okoRFcQ-IJn?usp=sharing
+
 -----
 
 
