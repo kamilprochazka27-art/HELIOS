@@ -30,7 +30,9 @@
         const collection = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
 
         // WebSocket připojení na tvůj běžící Colab přes localtunnel
-        const ws = new WebSocket('wss://tiny-times-visit.loca.lt');
+        const ws = new WebSocket(// WebSocket připojení na tvůj běžící Colab přes localtunnel
+const ws = new WebSocket('wss://spicy-cloths-crash.loca.lt');
+        ;
 
         ws.onopen = () => {
             document.getElementById('status').innerText = 'Connected (Live Stream)';
