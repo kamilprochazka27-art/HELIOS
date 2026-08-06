@@ -179,13 +179,21 @@ except Exception as e:
  ```   
 🛡️ Security Policy & Threat Mitigation Matrix     
 
-Threat VectorStandard ApproachHELIOS Gateway Mitigation
-
-Prompt Injection / JailbreakBlock keywords via basic blacklistsAST structural analysis evaluates semantics and syntax regardless of string formatting
-Malicious Code ExecutionUnchecked execution via exec() / eval()Forced execution inside HeliosSandbox with restricted globals, white-listed built-ins, and AST module blocks
-Denial of Service (DoS) / LoopsNone (risk of thread/process hanging)Dedicated subprocess execution with strict hard timeouts (e.g., 1.5s) and automatic process termination
-Log TamperingStandard text log filesSHA3-256 cryptographically linked audit chain (Blockchain-style immutability)
-Rogue Agent PersistenceContinuous local retries after attackDistributed P2P BFT Quorum voting leading to immediate network-wide global quarantine (GLOBALLY_QUARANTINED)
+Prompt Injection / Jailbreak
+Standard Approach: Block keywords via basic blacklists.
+HELIOS Mitigation: AST structural analysis evaluates semantics and syntax regardless of string formatting.
+Malicious Code Execution
+Standard Approach: Unchecked execution via exec() / eval().
+HELIOS Mitigation: Forced execution inside HeliosSandbox with restricted globals, white-listed built-ins, and AST module blocks.
+Denial of Service (DoS) / Loops
+Standard Approach: None (risk of thread/process hanging).
+HELIOS Mitigation: Dedicated subprocess execution with strict hard timeouts (e.g., 1.5s) and automatic process termination.
+Log Tampering
+Standard Approach: Standard text log files.
+HELIOS Mitigation: SHA3-256 cryptographically linked audit chain (Blockchain-style immutability).
+Rogue Agent Persistence
+Standard Approach: Continuous local retries after attack.
+HELIOS Mitigation: Distributed P2P BFT Quorum voting leading to immediate network-wide global quarantine (GLOBALLY_QUARANTINED).
 
 📜 License
 This project is licensed under the MIT License - see the LICENSE file for details.
