@@ -3,9 +3,6 @@ HELIOS Project Documentation
 
 Live environment and simulation execution 
 
-Githib link:
-https://github.com/kamilprochazka27-art/HELIOS
-
 Google COLAB link: https://colab.research.google.com/drive/17gTTf9Py_ixBQdhK3wcw7okoRFcQ-IJn?usp=sharing#scrollTo=6ZQycun37SYH&uniqifier=2
 
 -
@@ -180,19 +177,32 @@ except Exception as e:
 🛡️ Security Policy & Threat Mitigation Matrix     
 
 Prompt Injection / Jailbreak
+
 Standard Approach: Block keywords via basic blacklists.
+
 HELIOS Mitigation: AST structural analysis evaluates semantics and syntax regardless of string formatting.
+
 Malicious Code Execution
+
 Standard Approach: Unchecked execution via exec() / eval().
+
 HELIOS Mitigation: Forced execution inside HeliosSandbox with restricted globals, white-listed built-ins, and AST module blocks.
+
 Denial of Service (DoS) / Loops
 Standard Approach: None (risk of thread/process hanging).
+
 HELIOS Mitigation: Dedicated subprocess execution with strict hard timeouts (e.g., 1.5s) and automatic process termination.
+
 Log Tampering
+
 Standard Approach: Standard text log files.
+
 HELIOS Mitigation: SHA3-256 cryptographically linked audit chain (Blockchain-style immutability).
+
 Rogue Agent Persistence
+
 Standard Approach: Continuous local retries after attack.
+
 HELIOS Mitigation: Distributed P2P BFT Quorum voting leading to immediate network-wide global quarantine (GLOBALLY_QUARANTINED).
 
 📜 License
