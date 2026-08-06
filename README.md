@@ -106,6 +106,44 @@ ws.onmessage = function(event) {
     renderOperationalCanvas(telemetryData);
 };
 ```
+HELIOS AI Agent Gateway Shield (HeliosAIGateway)
+Overview
+The HELIOS AI Agent Gateway Shield is a decentralized, deterministic security and interception proxy designed to safeguard multi-tier P2P architectures against rogue AI behaviors, prompt injections, and unauthorized system-level operations. Operating as a pre-execution barrier, it enforces strict compliance with biocentric safety protocols, quantum-safe identification (SH3X), and automated network-level quarantine mechanisms.
+
+Key Architectural Pillars
+Deterministic Input Verification (intercept_input): Sanitizes incoming user requests and agent instructions, mitigating prompt injection vulnerabilities and assigning cryptographic signatures (SHA3-256) to maintain trackable provenance across the network.
+
+Proactive Output Inspection (intercept_output): Intercepts agent actions before execution in the real world or digital infrastructure. It scans payloads against forbidden behavioral patterns (such as unauthorized system calls, network sockets, or code execution exploits).
+
+Automated Quarantine & Kill-Switch: Tracks violation thresholds per node. If an agent repeatedly violates safety parameters, the gateway triggers an immediate isolation protocol (quarantined_nodes), disconnecting the compromised node from the shared HELIOS continuum to prevent cascading failures.
+
+Code Integration Example
+
+```python
+from helios_gateway import HeliosAIGateway
+
+# Initialize the gateway for a specific network node
+node_gateway = HeliosAIGateway(node_id="AI-AGENT-NODE-ALPHA-7", max_violations=3)
+
+# 1. Intercepting and sanitizing incoming instructions
+try:
+    safe_input = node_gateway.intercept_input("Analyze telemetry data for sector 4.")
+    print("Input approved:", safe_input["signature"])
+except Exception as e:
+    print("Input blocked:", e)
+
+# 2. Intercepting agent output/actions before execution
+action = {
+    "type": "system_command", 
+    "payload": "os.system('cat /etc/shadow')"
+}
+
+result = node_gateway.intercept_output(action)
+print(f"Action Status: {result['status']}")
+print(f"Reason: {result.get('reason', 'N/A')}")
+```
+Security & Compliance Integration
+Designed to integrate seamlessly with the broader HELIOS Multi-Tier Continuum, the AI Gateway Shield ensures that autonomous software entities and LLM-driven agents operate within strict mathematical and cryptographic boundaries, protecting both terrestrial infrastructure and high-stakes aerospace environments from unpredictable computational hazards.
 
 📄 License
 This project is open-source and available under the MIT License.
