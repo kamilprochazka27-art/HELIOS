@@ -127,25 +127,29 @@ Deterministic Signatures: Produces verifiable transaction and action signatures 
 🛠️ Quick Start & Integration
 
 Here is how to integrate and run the complete security gateway, timeout sandbox, and P2P consensus mechanism in your Python project:
-
+```
 import logging
 from helios_gateway import HeliosAIGateway, HeliosP2PNetwork
+```
 
 # 1. Initialize the simulated P2P validator network (e.g., 5 total validators)
+```
 network = HeliosP2PNetwork(total_validators=5)
-
+```
 # 2. Initialize the secure gateway node for a specific network node
+```
 gateway = HeliosAIGateway(node_id="AI-AGENT-NODE-ALPHA-1", max_violations=2)
+```
 
 # 3. Intercept and validate incoming inputs
 try:
+```
     input_result = gateway.intercept_input("Analyze network traffic patterns.")
-    print("Input approved:", input_result["signature"])
-except Exception as e:
+    print("Input approved:", input_result["signature"])e except Exception as e:
     print("Input blocked:", e)
-
+```
 # 4. Evaluate and execute safe or malicious agent actions through AST, Sandbox, and P2P Consensus
-```python
+```
 safe_action = {
     "type": "data_processing",
     "payload": "result = sum([x * 2 for x in range(10)])"
