@@ -100,12 +100,12 @@ To connect the running Colab backend to a live 2D/3D visualization canvas on Git
 
 // Establish secure WebSocket connection to the active Colab tunnel
 const ws = new WebSocket('wss://your-tunnel-address.loca.lt');
-
-JavaScript 
+```JavaScript
 ws.onmessage = function(event) {
     const telemetryData = JSON.parse(event.data);
     renderOperationalCanvas(telemetryData);
 };
+```
 
 📄 License
 This project is open-source and available under the MIT License.
