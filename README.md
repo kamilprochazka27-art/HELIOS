@@ -180,6 +180,7 @@ except Exception as e:
 🛡️ Security Policy & Threat Mitigation Matrix     
 
 Threat VectorStandard ApproachHELIOS Gateway Mitigation
+
 Prompt Injection / JailbreakBlock keywords via basic blacklistsAST structural analysis evaluates semantics and syntax regardless of string formatting
 Malicious Code ExecutionUnchecked execution via exec() / eval()Forced execution inside HeliosSandbox with restricted globals, white-listed built-ins, and AST module blocks
 Denial of Service (DoS) / LoopsNone (risk of thread/process hanging)Dedicated subprocess execution with strict hard timeouts (e.g., 1.5s) and automatic process termination
