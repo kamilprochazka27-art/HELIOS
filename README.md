@@ -110,20 +110,20 @@ ws.onmessage = function(event) {
     renderOperationalCanvas(telemetryData);
 };
 ```
-HELIOS AI Gateway & Secure Execution Sandbox
+HELIOS AI Gateway, Timeout Sandbox & P2P Consensus Shield
 
-Enterprise-grade defense-in-depth security gateway and deterministic validation runtime designed to protect decentralized networks against rogue autonomous AI agents, prompt injection exploits, and unauthorized system commands.
+Enterprise-grade defense-in-depth security gateway, isolated execution runtime, and decentralized consensus layer designed to protect decentralized P2P networks against rogue autonomous AI agents, prompt injection exploits, resource exhaustion (DoS), and unauthorized system commands.
 
 🚀 Key Features
-AST Structural Threat Detection: Goes far beyond naive text matching (regex) by parsing code payloads into an Abstract Syntax Tree (AST). This defeats text obfuscation, variable splitting, and string concatenation bypasses.
+Structural AST Threat Detection: Goes far beyond naive text matching (regex) by parsing code payloads into an Abstract Syntax Tree (AST). This defeats text obfuscation, variable splitting, and string concatenation bypasses.
 
-Isolated Application Sandbox: Safely executes verified payloads within a restricted global scope and a white-listed set of built-in functions, preventing raw system access.
+Timeout-Protected Application Sandbox: Safely executes verified payloads within a restricted global scope and white-listed built-in functions, backed by a hard hardware/process timer to instantly neutralize infinite loops or Denial of Service (DoS) attacks.
 
-Cryptographic Immutable Audit Ledger: Generates a tamper-evident, SHA3-256 cryptographically chained log of every action, security violation, and quarantine event for comprehensive forensic analysis.
+Distributed P2P Quorum & Global Quarantine: Elevates security from local node protection to a Byzantine Fault Tolerant (BFT) network consensus. Once a violation threshold is breached, network validators collectively evaluate and enforce global isolation (GLOBALLY_QUARANTINED).
 
-Autonomous Quarantine (Kill-Switch): Automatically isolates and disconnects nodes from the network once a predefined security violation threshold is crossed.
+Cryptographic Immutable Audit Ledger: Generates a tamper-evident, SHA3-256 cryptographically chained log of every action, security violation, and quarantine event for comprehensive forensic analysis and non-repudiation.
 
-Deterministic Signatures: Produces verifiable transaction/action signatures using SHA3-256 with timestamp verification.
+Deterministic Signatures: Produces verifiable transaction and action signatures using SHA3-256 with timestamp verification.
 
 🏛️ Architecture Overview
 
@@ -134,50 +134,57 @@ Deterministic Signatures: Produces verifiable transaction/action signatures usin
        │
        ▼
 [ AST Structural Analysis ] ──> (Detects forbidden modules/functions)
-       ├─► [ IF DANGEROUS ]  ──> Increment Violation Counter ──> (Quarantine if limit reached)
+       ├─► [ IF DANGEROUS ]  ──> Increment Violation Counter ──> (Trigger P2P Consensus if limit reached)
        └─► [ IF SAFE ]      ──> Cryptographic Audit Log (SHA3-256 Chained)
                                       │
                                       ▼
-                            [ HeliosSandbox Execution ] ──> Safe Result / Output
+                            [ HeliosSandbox Execution ] ──> Timeout-Guarded Process (Max 1.5s)
+                                      │
+                                      ▼
+                            [ Approved Result / Output ]
 
-​🛠️ Quick Start
+🛠️ Quick Start & Integration
 
-​Here is how to integrate and run the secure gateway in your Python project:  
-
+Here is how to integrate and run the complete security gateway, timeout sandbox, and P2P consensus mechanism in your Python project:
 
 ```python
-import json
 import logging
-from helios_gateway import HeliosAIGateway  # Assuming saved in module
+from helios_gateway import HeliosAIGateway, HeliosP2PNetwork
 
-# Initialize the gateway for a specific network node
-gateway = HeliosAIGateway(node_id="AI-AGENT-NODE-ALPHA-1", max_violations=3)
+# 1. Initialize the simulated P2P validator network (e.g., 5 total validators)
+network = HeliosP2PNetwork(total_validators=5)
 
-# 1. Intercept and validate incoming inputs
+# 2. Initialize the secure gateway node for a specific network node
+gateway = HeliosAIGateway(node_id="AI-AGENT-NODE-ALPHA-1", max_violations=2)
+
+# 3. Intercept and validate incoming inputs
 try:
     input_result = gateway.intercept_input("Analyze network traffic patterns.")
     print("Input approved:", input_result["signature"])
 except Exception as e:
     print("Input blocked:", e)
 
-# 2. Intercept and inspect agent outputs / actions
+# 4. Evaluate and execute safe or malicious agent actions through AST, Sandbox, and P2P Consensus
 safe_action = {
     "type": "data_processing",
     "payload": "result = sum([x * 2 for x in range(10)])"
 }
 
-output_result = gateway.intercept_output(safe_action)
-print("Execution Status:", output_result["status"])
-print("Sandbox Output:", output_result.get("sandbox_result"))
-```
-🛡️ Security Policy & Threat Mitigation
+try:
+    result = gateway.evaluate_action(safe_action, peer_network=network)
+    print("Execution Status:", result["status"])
+    print("Sandbox Output:", result.get("sandbox_result"))
+except Exception as e:
+    print("Security Interception:", e)
+ ```   
+🛡️ Security Policy & Threat Mitigation Matrix     
 
-| Threat Vector | Standard Approach | HELIOS Gateway Mitigation |
-| :--- | :--- | :--- |
-| **Prompt Injection / Jailbreak** | Block keywords via basic blacklists | AST structural analysis evaluates semantics regardless of string formatting |
-| **Malicious Code Execution** | Unchecked execution via `exec()` / `eval()` | Forced execution inside `HeliosSandbox` with restricted globals & built-ins |
-| **Log Tampering** | Standard text log files | SHA3-256 cryptographically linked audit chain (Blockchain-style immutability) |
-| **Rogue Agent Persistence** | Continuous retries after attack | Automatic network-level quarantine (Kill-switch) upon threshold breach |
+Threat VectorStandard ApproachHELIOS Gateway Mitigation
+Prompt Injection / JailbreakBlock keywords via basic blacklistsAST structural analysis evaluates semantics and syntax regardless of string formatting
+Malicious Code ExecutionUnchecked execution via exec() / eval()Forced execution inside HeliosSandbox with restricted globals, white-listed built-ins, and AST module blocks
+Denial of Service (DoS) / LoopsNone (risk of thread/process hanging)Dedicated subprocess execution with strict hard timeouts (e.g., 1.5s) and automatic process termination
+Log TamperingStandard text log filesSHA3-256 cryptographically linked audit chain (Blockchain-style immutability)
+Rogue Agent PersistenceContinuous local retries after attackDistributed P2P BFT Quorum voting leading to immediate network-wide global quarantine (GLOBALLY_QUARANTINED)
 
 📜 License
 This project is licensed under the MIT License - see the LICENSE file for details.
