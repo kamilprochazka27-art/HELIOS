@@ -110,44 +110,77 @@ ws.onmessage = function(event) {
     renderOperationalCanvas(telemetryData);
 };
 ```
-HELIOS AI Agent Gateway Shield (HeliosAIGateway)
-Overview
-The HELIOS AI Agent Gateway Shield is a decentralized, deterministic security and interception proxy designed to safeguard multi-tier P2P architectures against rogue AI behaviors, prompt injections, and unauthorized system-level operations. Operating as a pre-execution barrier, it enforces strict compliance with biocentric safety protocols, quantum-safe identification (SH3X), and automated network-level quarantine mechanisms.
+HELIOS AI Gateway & Secure Execution Sandbox
 
-Key Architectural Pillars
-Deterministic Input Verification (intercept_input): Sanitizes incoming user requests and agent instructions, mitigating prompt injection vulnerabilities and assigning cryptographic signatures (SHA3-256) to maintain trackable provenance across the network.
+Enterprise-grade defense-in-depth security gateway and deterministic validation runtime designed to protect decentralized networks against rogue autonomous AI agents, prompt injection exploits, and unauthorized system commands.
 
-Proactive Output Inspection (intercept_output): Intercepts agent actions before execution in the real world or digital infrastructure. It scans payloads against forbidden behavioral patterns (such as unauthorized system calls, network sockets, or code execution exploits).
+🚀 Key Features
+AST Structural Threat Detection: Goes far beyond naive text matching (regex) by parsing code payloads into an Abstract Syntax Tree (AST). This defeats text obfuscation, variable splitting, and string concatenation bypasses.
 
-Automated Quarantine & Kill-Switch: Tracks violation thresholds per node. If an agent repeatedly violates safety parameters, the gateway triggers an immediate isolation protocol (quarantined_nodes), disconnecting the compromised node from the shared HELIOS continuum to prevent cascading failures.
+Isolated Application Sandbox: Safely executes verified payloads within a restricted global scope and a white-listed set of built-in functions, preventing raw system access.
 
-Code Integration Example
+Cryptographic Immutable Audit Ledger: Generates a tamper-evident, SHA3-256 cryptographically chained log of every action, security violation, and quarantine event for comprehensive forensic analysis.
+
+Autonomous Quarantine (Kill-Switch): Automatically isolates and disconnects nodes from the network once a predefined security violation threshold is crossed.
+
+Deterministic Signatures: Produces verifiable transaction/action signatures using SHA3-256 with timestamp verification.
+
+🏛️ Architecture Overview
+
+[ AI Agent Output ] 
+       │
+       ▼
+[ HeliosAIGateway ] ──> (Active Quarantine Check)
+       │
+       ▼
+[ AST Structural Analysis ] ──> (Detects forbidden modules/functions)
+       ├─► [ IF DANGEROUS ]  ──> Increment Violation Counter ──> (Quarantine if limit reached)
+       └─► [ IF SAFE ]      ──> Cryptographic Audit Log (SHA3-256 Chained)
+                                      │
+                                      ▼
+                            [ HeliosSandbox Execution ] ──> Safe Result / Output
+
+​🛠️ Quick Start
+
+​Here is how to integrate and run the secure gateway in your Python project:  
+
 
 ```python
-from helios_gateway import HeliosAIGateway
+import json
+import logging
+from helios_gateway import HeliosAIGateway  # Assuming saved in module
 
 # Initialize the gateway for a specific network node
-node_gateway = HeliosAIGateway(node_id="AI-AGENT-NODE-ALPHA-7", max_violations=3)
+gateway = HeliosAIGateway(node_id="AI-AGENT-NODE-ALPHA-1", max_violations=3)
 
-# 1. Intercepting and sanitizing incoming instructions
+# 1. Intercept and validate incoming inputs
 try:
-    safe_input = node_gateway.intercept_input("Analyze telemetry data for sector 4.")
-    print("Input approved:", safe_input["signature"])
+    input_result = gateway.intercept_input("Analyze network traffic patterns.")
+    print("Input approved:", input_result["signature"])
 except Exception as e:
     print("Input blocked:", e)
 
-# 2. Intercepting agent output/actions before execution
-action = {
-    "type": "system_command", 
-    "payload": "os.system('cat /etc/shadow')"
+# 2. Intercept and inspect agent outputs / actions
+safe_action = {
+    "type": "data_processing",
+    "payload": "result = sum([x * 2 for x in range(10)])"
 }
 
-result = node_gateway.intercept_output(action)
-print(f"Action Status: {result['status']}")
-print(f"Reason: {result.get('reason', 'N/A')}")
+output_result = gateway.intercept_output(safe_action)
+print("Execution Status:", output_result["status"])
+print("Sandbox Output:", output_result.get("sandbox_result"))
 ```
-Security & Compliance Integration
-Designed to integrate seamlessly with the broader HELIOS Multi-Tier Continuum, the AI Gateway Shield ensures that autonomous software entities and LLM-driven agents operate within strict mathematical and cryptographic boundaries, protecting both terrestrial infrastructure and high-stakes aerospace environments from unpredictable computational hazards.
+🛡️ Security Policy & Threat Mitigation
 
-📄 License
-This project is open-source and available under the MIT License.
+| Threat Vector | Standard Approach | HELIOS Gateway Mitigation |
+| :--- | :--- | :--- |
+| **Prompt Injection / Jailbreak** | Block keywords via basic blacklists | AST structural analysis evaluates semantics regardless of string formatting |
+| **Malicious Code Execution** | Unchecked execution via `exec()` / `eval()` | Forced execution inside `HeliosSandbox` with restricted globals & built-ins |
+| **Log Tampering** | Standard text log files | SHA3-256 cryptographically linked audit chain (Blockchain-style immutability) |
+| **Rogue Agent Persistence** | Continuous retries after attack | Automatic network-level quarantine (Kill-switch) upon threshold breach |
+
+📜 License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+
+
